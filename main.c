@@ -4,15 +4,16 @@
 
 #include "raylib.h"
 
+Vector2 screenSize() {
+    return (Vector2){1600, 900};
+}
+
 void initWindow() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
     InitWindow(0, 0, "Test");
-    const int w = GetScreenWidth();
-    const int h = GetScreenHeight();
-    const int nw = w * .8f;
-    const int nh = h * .8f;
-    SetWindowSize(nw, nh);
-    SetWindowPosition(w / 2 - nw / 2, h / 2 - nh / 2);
+    const Vector2 ss = screenSize();
+    SetWindowSize(ss.x, ss.y);
+    SetWindowPosition(GetScreenWidth() / 2, GetScreenHeight() / 2);
 }
 
 Shader getShader(const char *fileName) {
@@ -57,33 +58,43 @@ void mainLoop() {
 
     Model model = LoadModel("../resources/Astronaut.glb");
     Texture2D texture = LoadTexture("../resources/textures/Atlas.png");
+    model.materials[2].maps[MATERIAL_MAP_ALBEDO].texture = texture;
 
-    model.materials[2].shader = getShader("../resources/shaders/base.glsl");
+    Shader shader = getShader("../resources/shaders/base.glsl");
     Vector4 c = colorToVector(WHITE);
     Vector3 pos = {0};
 
     float time;
 
+    const Vector2 ss = screenSize();
+    RenderTexture2D target = LoadRenderTexture(ss.x, ss.y);
+
     while (!WindowShouldClose()) {
         time = GetTime();
         if (IsKeyPressed(KEY_F5)) {
-            UnloadShader(model.materials[2].shader);
-            model.materials[2].shader = getShader("../resources/shaders/base.glsl");
+            UnloadShader(shader);
+            shader = getShader("../resources/shaders/base.glsl");
         }
 
-        int t = GetShaderLocation(model.materials[2].shader, "_tex0");
-        int t1 = GetShaderLocation(model.materials[2].shader, "_colAlbedo");
-        int t2 = GetShaderLocation(model.materials[2].shader, "_time");
-        BeginDrawing();
+        const int t = GetShaderLocation(shader, "_tex0");
+        const int t1 = GetShaderLocation(shader, "_colAlbedo");
+        const int t2 = GetShaderLocation(shader, "_time");
+
+        UpdateCamera(&camera, CAMERA_ORBITAL);
+        BeginTextureMode(target);
             ClearBackground(WHITE);
             BeginMode3D(camera);
-
-                SetShaderValue(model.materials[2].shader, t2, &time, SHADER_UNIFORM_FLOAT);
-                SetShaderValue(model.materials[2].shader, t1, &c, SHADER_UNIFORM_VEC4);
-                SetShaderValueTexture(model.materials[2].shader, t, texture);
                 DrawModelEx(model, pos, (Vector3){1, 0, 0}, -90, (Vector3){100, 100, 100}, WHITE);
-                DrawGrid(10, 1);
             EndMode3D();
+        EndTextureMode();
+
+        BeginDrawing();
+            BeginShaderMode(shader);
+                SetShaderValue(shader, t2, &time, SHADER_UNIFORM_FLOAT);
+                SetShaderValue(shader, t1, &c, SHADER_UNIFORM_VEC4);
+                SetShaderValueTexture(shader, t, target.texture);
+                DrawTextureRec(target.texture, (Rectangle){0,0,(float)target.texture.width, (float)-target.texture.height}, (Vector2){0, 0}, WHITE);
+            EndShaderMode();
         EndDrawing();
     }
 
