@@ -4,6 +4,8 @@
 
 #include "raylib.h"
 
+#define SHADER "../resources/shaders/base.glsl"
+
 Vector2 screenSize() {
     return (Vector2){1600, 900};
 }
@@ -60,8 +62,7 @@ void mainLoop() {
     Texture2D texture = LoadTexture("../resources/textures/Atlas.png");
     model.materials[2].maps[MATERIAL_MAP_ALBEDO].texture = texture;
 
-    Shader shader = getShader("../resources/shaders/base.glsl");
-    Vector4 c = colorToVector(WHITE);
+    Shader shader = getShader(SHADER);
     Vector3 pos = {0};
 
     float time;
@@ -73,11 +74,10 @@ void mainLoop() {
         time = GetTime();
         if (IsKeyPressed(KEY_F5)) {
             UnloadShader(shader);
-            shader = getShader("../resources/shaders/base.glsl");
+            shader = getShader(SHADER);
         }
 
         const int t = GetShaderLocation(shader, "_tex0");
-        const int t1 = GetShaderLocation(shader, "_colAlbedo");
         const int t2 = GetShaderLocation(shader, "_time");
 
         UpdateCamera(&camera, CAMERA_ORBITAL);
@@ -91,7 +91,6 @@ void mainLoop() {
         BeginDrawing();
             BeginShaderMode(shader);
                 SetShaderValue(shader, t2, &time, SHADER_UNIFORM_FLOAT);
-                SetShaderValue(shader, t1, &c, SHADER_UNIFORM_VEC4);
                 SetShaderValueTexture(shader, t, target.texture);
                 DrawTextureRec(target.texture, (Rectangle){0,0,(float)target.texture.width, (float)-target.texture.height}, (Vector2){0, 0}, WHITE);
             EndShaderMode();

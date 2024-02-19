@@ -15,11 +15,10 @@ void main(void) {
 in vec2 _fTexCoord;
 
 uniform sampler2D _tex0;
-uniform vec4 _colAlbedo;
 
 out vec4 _outColor;
 
 void main() {
-    _outColor = texture(_tex0, _fTexCoord) * _colAlbedo;
+    _outColor = texture(_tex0, _fTexCoord);
     _outColor = vec4(_outColor.rgb, abs(sin(_time)));
 }
