@@ -4,7 +4,15 @@
 
 #include "raylib.h"
 
+#define ROBERTS
+
+#ifdef ROBERTS
+#define SHADER "../resources/shaders/roberts.glsl"
+#elif defined CANNY
+#define SHADER "../resources/shaders/canny.glsl"
+#else
 #define SHADER "../resources/shaders/base.glsl"
+#endif
 
 Vector2 screenSize() {
     return (Vector2){1600, 900};
@@ -66,12 +74,23 @@ void mainLoop() {
     Vector3 pos = {0};
 
     float time;
+#ifdef ROBERTS
+    float outlineThickness = 1.f;
+    Vector2 resolution;
+    Vector4 edgeColor = colorToVector(BLACK);
+#endif
 
     const Vector2 ss = screenSize();
     RenderTexture2D target = LoadRenderTexture(ss.x, ss.y);
 
     while (!WindowShouldClose()) {
         time = GetTime();
+#ifdef ROBERTS
+        resolution = (Vector2) {
+            GetScreenWidth(),
+            GetScreenHeight()
+        };
+#endif
         if (IsKeyPressed(KEY_F5)) {
             UnloadShader(shader);
             shader = getShader(SHADER);
@@ -79,6 +98,11 @@ void mainLoop() {
 
         const int t = GetShaderLocation(shader, "_tex0");
         const int t2 = GetShaderLocation(shader, "_time");
+#ifdef ROBERTS
+        const int res = GetShaderLocation(shader, "_resolution");
+        const int thick = GetShaderLocation(shader, "_outlineThickness");
+        const int col = GetShaderLocation(shader, "_edgeColor");
+#endif
 
         UpdateCamera(&camera, CAMERA_ORBITAL);
         BeginTextureMode(target);
@@ -92,6 +116,11 @@ void mainLoop() {
             BeginShaderMode(shader);
                 SetShaderValue(shader, t2, &time, SHADER_UNIFORM_FLOAT);
                 SetShaderValueTexture(shader, t, target.texture);
+#ifdef ROBERTS
+                SetShaderValue(shader, res, &resolution, SHADER_UNIFORM_VEC2);
+                SetShaderValue(shader, thick, &outlineThickness, SHADER_UNIFORM_FLOAT);
+                SetShaderValue(shader, col, &edgeColor, SHADER_UNIFORM_VEC4);
+#endif
                 DrawTextureRec(target.texture, (Rectangle){0,0,(float)target.texture.width, (float)-target.texture.height}, (Vector2){0, 0}, WHITE);
             EndShaderMode();
         EndDrawing();
